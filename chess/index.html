@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#eef8e6">
+<link rel="apple-touch-icon" href="../icon.png">
+<link rel="icon" href="../icon.png">
+<title>체스 · 우리집 놀이터</title>
+<link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
+<style>
+  :root{--ink:#5b3a29;--soft:#8a6a55;--light:#fff6e2;--dark:#9fd38a;--g:#6cbf5a;--gd:#4a9a3a}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none}
+  html,body{margin:0;height:100%;overscroll-behavior:none}
+  button,a,.sq{touch-action:manipulation}
+  body{
+    font-family:'Jua',system-ui,sans-serif;color:var(--ink);user-select:none;-webkit-user-select:none;
+    background:
+      radial-gradient(circle at 10% 15%,#fff 0 6px,transparent 7px),
+      radial-gradient(circle at 85% 8%,#fff 0 4px,transparent 5px),
+      radial-gradient(circle at 92% 70%,#fff 0 7px,transparent 8px),
+      linear-gradient(160deg,#f0fae8,#fff4e6);
+    background-attachment:fixed;
+    display:flex;flex-direction:column;align-items:center;justify-content:space-evenly;
+    padding:calc(env(safe-area-inset-top) + 12px) 12px calc(env(safe-area-inset-bottom) + 14px);
+    min-height:100vh;min-height:100dvh;
+  }
+  .home{position:fixed;top:calc(env(safe-area-inset-top) + 10px);left:12px;z-index:40;
+    width:50px;height:50px;border-radius:50%;background:#fff;display:grid;place-items:center;
+    font-size:26px;text-decoration:none;box-shadow:0 4px 0 rgba(0,0,0,.1)}
+  .home:active{transform:translateY(3px);box-shadow:0 1px 0 rgba(0,0,0,.1)}
+  h1{margin:4px 0 2px;font-size:clamp(26px,6vw,40px);font-weight:400;text-shadow:0 3px 0 #fff,0 5px 0 rgba(108,191,90,.25)}
+  .glyph{font-family:"Apple Symbols","Segoe UI Symbol","DejaVu Sans","Noto Sans Symbols2",serif;font-weight:400}
+  .sub{color:var(--soft);font-size:15px;margin-bottom:10px;text-align:center;min-height:1.3em;transition:.2s}
+  .sub.check{color:#e5484d;font-size:18px;animation:shake .4s}
+  @keyframes shake{25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+
+  .wrap{width:min(96vw, calc(100dvh - 440px), 860px);min-width:300px;display:flex;flex-direction:column}
+  @supports not (height:100dvh){ .wrap{width:min(96vw, calc(100vh - 440px), 860px)} }
+
+  .pbar{display:flex;align-items:center;gap:10px;background:#fff;border-radius:20px;padding:8px 12px;
+    border:4px solid transparent;box-shadow:0 4px 0 rgba(0,0,0,.06);transition:.25s;position:relative;min-height:62px}
+  .pbar.active{border-color:var(--g);box-shadow:0 5px 0 #c6ecb6}
+  .pbar.active::after{content:'내 차례!';position:absolute;right:14px;top:-13px;background:var(--g);color:#fff;
+    font-size:13px;padding:2px 10px;border-radius:99px}
+  .pbar .who{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;font-size:32px;flex:none;line-height:1}
+  .pbar.w .who{background:#fff6e2;color:#fff;-webkit-text-stroke:2px #5b3a29;paint-order:stroke fill}
+  .pbar.b .who{background:#5b3a29;color:#5b3a29;-webkit-text-stroke:2px #ffe9c8;paint-order:stroke fill}
+  .pbar .nm{font-size:18px;white-space:nowrap}
+  .pbar .caps{flex:1;display:flex;flex-wrap:wrap;justify-content:flex-end;font-size:22px;line-height:1.1;min-width:0}
+  .caps span{margin-left:-3px}
+  .caps .w{color:#fff;-webkit-text-stroke:1.5px #5b3a29;paint-order:stroke fill}
+  .caps .b{color:#5b3a29}
+  #barTop{margin-bottom:12px} #barBot{margin-top:12px}
+
+  .board-shell{background:#f4c97a;border-radius:22px;padding:2.4%;box-shadow:0 8px 0 #dca95a,0 14px 30px rgba(180,120,60,.25)}
+  .board{display:grid;grid-template-columns:repeat(8,1fr);grid-template-rows:repeat(8,1fr);aspect-ratio:1;border-radius:12px;overflow:hidden;position:relative}
+  .sq{position:relative;min-width:0;min-height:0;overflow:hidden;display:grid;place-items:center;cursor:pointer}
+  .sq.l{background:var(--light)} .sq.d{background:var(--dark)}
+  .sq .coord{position:absolute;font-size:calc(var(--cell)*.17);color:rgba(91,58,41,.45);pointer-events:none}
+  .sq .coord.f{right:6%;bottom:2%} .sq .coord.r{left:6%;top:3%}
+  .sq.last::before{content:'';position:absolute;inset:0;background:rgba(255,214,63,.45)}
+  .sq.sel::before{content:'';position:absolute;inset:0;background:rgba(255,179,71,.65)}
+  .sq.incheck::before{content:'';position:absolute;inset:0;background:radial-gradient(circle,#ff5a5f 0,rgba(255,90,95,.6) 40%,transparent 75%)}
+  .sq .dot{position:absolute;width:30%;height:30%;border-radius:50%;background:rgba(74,154,58,.55);pointer-events:none;z-index:2;
+    animation:dot .25s ease-out}
+  .sq .ring{position:absolute;inset:5%;border-radius:50%;border:calc(var(--cell)*.08) solid rgba(229,72,77,.6);pointer-events:none;z-index:2}
+  @keyframes dot{from{transform:scale(0)}}
+  .pc{position:relative;z-index:1;font-size:calc(var(--cell)*.8);line-height:1;pointer-events:none;transition:transform .15s;
+    filter:drop-shadow(0 2px 1px rgba(0,0,0,.18))}
+  .pc.w{color:#fff;-webkit-text-stroke:calc(var(--cell)*.035) #5b3a29;paint-order:stroke fill}
+  .pc.b{color:#4a2f22;-webkit-text-stroke:calc(var(--cell)*.02) #4a2f22}
+  .sq.sel .pc{transform:scale(1.15) translateY(-4%)}
+  .pc.moved{animation:land .3s cubic-bezier(.3,1.6,.5,1)}
+  @keyframes land{from{transform:scale(1.35)}}
+
+  .controls{display:flex;gap:10px;justify-content:center;margin-top:18px;flex-wrap:wrap}
+  .btn{font-family:inherit;font-size:17px;color:var(--ink);background:#fff;border:none;padding:10px 18px;border-radius:99px;
+    cursor:pointer;box-shadow:0 4px 0 rgba(0,0,0,.1)}
+  .btn:active{transform:translateY(3px);box-shadow:0 1px 0 rgba(0,0,0,.1)}
+  .btn:disabled{opacity:.45}
+  .btn.primary{background:var(--g);color:#fff;box-shadow:0 4px 0 var(--gd)}
+
+  .overlay{position:fixed;inset:0;background:rgba(91,58,41,.35);display:none;align-items:center;justify-content:center;z-index:50;padding:20px}
+  .overlay.show{display:flex}
+  .modal{background:#fff;border-radius:30px;padding:26px 24px 22px;text-align:center;width:min(92vw,380px);animation:modal .45s cubic-bezier(.3,1.6,.5,1)}
+  @keyframes modal{from{transform:scale(.4);opacity:0}}
+  .modal .big{font-size:80px;line-height:1;margin-bottom:6px;animation:bob 1s ease-in-out infinite}
+  @keyframes bob{50%{transform:translateY(-6px) rotate(-6deg)}}
+  .modal h2{margin:4px 0;font-weight:400;font-size:28px}
+  .modal p{margin:6px 0 16px;color:var(--soft)}
+  .promo{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:14px 0 4px}
+  .promo button{aspect-ratio:1;border-radius:20px;border:none;background:#f0fae8;font-size:48px;cursor:pointer;
+    font-family:inherit;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1}
+  .promo button small{font-family:'Jua';font-size:13px;color:var(--soft);margin-top:4px}
+  .promo button:active{transform:scale(.92)}
+  canvas#confetti{position:fixed;inset:0;pointer-events:none;z-index:60}
+
+  @media (max-width:440px){ h1{margin-left:40px} .pbar .nm{font-size:16px} .pbar .caps{font-size:18px} }
+  @media (min-width:700px){
+    h1{font-size:46px} .sub{font-size:19px;margin-bottom:16px} .sub.check{font-size:22px}
+    .pbar{padding:10px 16px;min-height:76px;border-radius:24px}
+    .pbar .who{width:56px;height:56px;font-size:42px} .pbar .nm{font-size:23px} .pbar .caps{font-size:30px}
+    .pbar.active::after{font-size:16px;top:-15px}
+    #barTop{margin-bottom:18px} #barBot{margin-top:18px}
+    .btn{font-size:21px;padding:14px 24px} .controls{margin-top:24px;gap:14px}
+  }
+</style>
+</head>
+<body>
+  <a class="home" href="../index.html" aria-label="처음 화면">🏠</a>
+  <h1><span class="glyph">♞&#xFE0E;</span> 체스</h1>
+  <div class="sub" id="msg">말을 누르면 갈 수 있는 곳이 초록 점으로 보여요</div>
+
+  <div class="wrap">
+    <div class="pbar b" id="barTop">
+      <div class="who glyph">♚&#xFE0E;</div>
+      <div class="nm" id="nmB">엄마아빠 (검정)</div>
+      <div class="caps glyph" id="capsB"></div>
+    </div>
+
+    <div class="board-shell"><div class="board" id="board"></div></div>
+
+    <div class="pbar w" id="barBot">
+      <div class="who glyph">♚&#xFE0E;</div>
+      <div class="nm" id="nmW">아이 (하양)</div>
+      <div class="caps glyph" id="capsW"></div>
+    </div>
+
+    <div class="controls">
+      <button class="btn" id="undo">↩️ 한 수 무르기</button>
+      <button class="btn" id="flip">🔄 판 돌리기</button>
+      <button class="btn" id="sound">🔊 소리 켜짐</button>
+      <button class="btn primary" id="restart">🌈 새 게임</button>
+    </div>
+  </div>
+
+  <div class="overlay" id="endOv">
+    <div class="modal">
+      <div class="big" id="endFace">🏆</div>
+      <h2 id="endTitle">체크메이트!</h2>
+      <p id="endMsg"></p>
+      <button class="btn primary" id="again">한 판 더! 🎉</button>
+      <button class="btn" id="look" style="margin-left:6px">판 보기</button>
+    </div>
+  </div>
+  <div class="overlay" id="promoOv">
+    <div class="modal">
+      <h2>폰이 끝까지 왔어요! 🎉</h2>
+      <p>무엇으로 변신할까요?</p>
+      <div class="promo" id="promoBox"></div>
+    </div>
+  </div>
+  <div class="overlay" id="newOv">
+    <div class="modal">
+      <div class="big">🤔</div>
+      <h2>새 게임을 할까요?</h2>
+      <p>지금 하던 게임은 사라져요</p>
+      <button class="btn primary" id="newYes">응, 새로 할래!</button>
+      <button class="btn" id="newNo" style="margin-left:6px">아니</button>
+    </div>
+  </div>
+  <canvas id="confetti"></canvas>
+
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const VS = '︎';
+  const GLYPH = {K:'♚',Q:'♛',R:'♜',B:'♝',N:'♞',P:'♟'};
+  const INFO = {
+    K:['킹','왕이에요! 아무 방향으로 한 칸씩 가요. 잡히면 안 돼요!'],
+    Q:['퀸','제일 힘센 말! 가로, 세로, 대각선 어디든 쭉~ 가요.'],
+    R:['룩','성 모양 말. 가로, 세로로 쭉~ 가요.'],
+    B:['비숍','대각선으로만 쭉~ 가요.'],
+    N:['나이트','말 모양! ㄱ자로 점프해요. 다른 말을 뛰어넘을 수 있어요.'],
+    P:['폰','앞으로 한 칸! 처음엔 두 칸도 OK. 잡을 땐 대각선으로!'],
+  };
+
+  // 이름은 오목에서 정한 걸 같이 써요 (1번=하양, 2번=검정)
+  let names = {w:'아이', b:'엄마아빠'};
+  try{ const s = JSON.parse(localStorage.getItem('omok-kids')||'null');
+    if(s){ if(s.n1) names.w=s.n1; if(s.n2) names.b=s.n2; } }catch(e){}
+  $('nmW').textContent = `${names.w} (하양)`; $('nmB').textContent = `${names.b} (검정)`;
+
+  // ---------- 규칙 엔진 ----------
+  // board[r][c]: r=0 이 검정 쪽(위), r=7 이 하양 쪽(아래). 말은 'wK', 'bP' 같은 문자열
+  function initial(){
+    const back = ['R','N','B','Q','K','B','N','R'];
+    const b = Array.from({length:8},()=>Array(8).fill(null));
+    for(let c=0;c<8;c++){ b[0][c]='b'+back[c]; b[1][c]='bP'; b[6][c]='wP'; b[7][c]='w'+back[c]; }
+    return { b, turn:'w', castle:{wK:true,wQ:true,bK:true,bQ:true}, ep:null, caps:{w:[],b:[]}, last:null };
+  }
+  const inB = (r,c) => r>=0&&r<8&&c>=0&&c<8;
+  const clone = s => ({ b:s.b.map(r=>r.slice()), turn:s.turn, castle:{...s.castle}, ep:s.ep?{...s.ep}:null,
+                        caps:{w:s.caps.w.slice(), b:s.caps.b.slice()}, last:s.last });
+
+  function attacked(b, r, c, by){
+    // by 색 말이 (r,c)를 공격하는가
+    const pd = by==='w' ? 1 : -1;      // 공격하는 폰은 아래(하양)/위(검정)에 있어요
+    for(const dc of [-1,1]){ const rr=r+pd, cc=c+dc; if(inB(rr,cc) && b[rr][cc]===by+'P') return true; }
+    for(const [dr,dc] of [[1,2],[2,1],[-1,2],[-2,1],[1,-2],[2,-1],[-1,-2],[-2,-1]]){
+      const rr=r+dr, cc=c+dc; if(inB(rr,cc) && b[rr][cc]===by+'N') return true; }
+    for(let dr=-1;dr<=1;dr++) for(let dc=-1;dc<=1;dc++){ if(!dr&&!dc) continue;
+      const rr=r+dr, cc=c+dc; if(inB(rr,cc) && b[rr][cc]===by+'K') return true; }
+    const lines = [[[1,0],[-1,0],[0,1],[0,-1]],['R','Q']], diags = [[[1,1],[1,-1],[-1,1],[-1,-1]],['B','Q']];
+    for(const [dirs,types] of [lines,diags]) for(const [dr,dc] of dirs){
+      let rr=r+dr, cc=c+dc;
+      while(inB(rr,cc)){ const p=b[rr][cc]; if(p){ if(p[0]===by && types.includes(p[1])) return true; break; } rr+=dr; cc+=dc; }
+    }
+    return false;
+  }
+  function kingPos(b, col){ for(let r=0;r<8;r++) for(let c=0;c<8;c++) if(b[r][c]===col+'K') return [r,c]; return null; }
+  function inCheck(s, col){ const k=kingPos(s.b,col); return k && attacked(s.b,k[0],k[1], col==='w'?'b':'w'); }
+
+  function pseudo(s, r, c){
+    const b=s.b, p=b[r][c]; if(!p) return [];
+    const col=p[0], t=p[1], opp=col==='w'?'b':'w', mv=[];
+    const add=(tr,tc,x={})=>mv.push({fr:r,fc:c,tr,tc,...x});
+    if(t==='P'){
+      const d = col==='w'?-1:1, start = col==='w'?6:1, last = col==='w'?0:7;
+      const push=(tr,tc,x={})=> tr===last ? add(tr,tc,{...x,promo:true}) : add(tr,tc,x);
+      if(inB(r+d,c) && !b[r+d][c]){ push(r+d,c);
+        if(r===start && !b[r+2*d][c]) add(r+2*d,c,{dbl:true}); }
+      for(const dc of [-1,1]){ const tr=r+d, tc=c+dc; if(!inB(tr,tc)) continue;
+        if(b[tr][tc] && b[tr][tc][0]===opp) push(tr,tc);
+        else if(s.ep && s.ep.r===tr && s.ep.c===tc) add(tr,tc,{ep:true}); }
+    } else if(t==='N' || t==='K'){
+      const ds = t==='N' ? [[1,2],[2,1],[-1,2],[-2,1],[1,-2],[2,-1],[-1,-2],[-2,-1]]
+                         : [[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]];
+      for(const [dr,dc] of ds){ const tr=r+dr, tc=c+dc;
+        if(inB(tr,tc) && (!b[tr][tc] || b[tr][tc][0]===opp)) add(tr,tc); }
+      if(t==='K'){
+        const row = col==='w'?7:0;
+        if(r===row && c===4 && !attacked(b,row,4,opp)){
+          if(s.castle[col+'K'] && !b[row][5] && !b[row][6] && b[row][7]===col+'R' &&
+             !attacked(b,row,5,opp) && !attacked(b,row,6,opp)) add(row,6,{castle:'K'});
+          if(s.castle[col+'Q'] && !b[row][3] && !b[row][2] && !b[row][1] && b[row][0]===col+'R' &&
+             !attacked(b,row,3,opp) && !attacked(b,row,2,opp)) add(row,2,{castle:'Q'});
+        }
+      }
+    } else {
+      const ds = t==='R' ? [[1,0],[-1,0],[0,1],[0,-1]] : t==='B' ? [[1,1],[1,-1],[-1,1],[-1,-1]]
+               : [[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]];
+      for(const [dr,dc] of ds){ let tr=r+dr, tc=c+dc;
+        while(inB(tr,tc)){ if(b[tr][tc]){ if(b[tr][tc][0]===opp) add(tr,tc); break; } add(tr,tc); tr+=dr; tc+=dc; } }
+    }
+    return mv;
+  }
+
+  function apply(s, m, promoTo='Q'){
+    const n = clone(s), b = n.b, p = b[m.fr][m.fc], col = p[0], opp = col==='w'?'b':'w';
+    let captured = b[m.tr][m.tc];
+    if(m.ep){ captured = b[m.fr][m.tc]; b[m.fr][m.tc] = null; }
+    b[m.tr][m.tc] = m.promo ? col+promoTo : p; b[m.fr][m.fc] = null;
+    if(m.castle){ const row=m.fr;
+      if(m.castle==='K'){ b[row][5]=b[row][7]; b[row][7]=null; } else { b[row][3]=b[row][0]; b[row][0]=null; } }
+    if(captured) n.caps[col].push(captured);
+    if(p[1]==='K'){ n.castle[col+'K']=false; n.castle[col+'Q']=false; }
+    const fixRook=(r,c)=>{ if(r===7&&c===0) n.castle.wQ=false; if(r===7&&c===7) n.castle.wK=false;
+                           if(r===0&&c===0) n.castle.bQ=false; if(r===0&&c===7) n.castle.bK=false; };
+    fixRook(m.fr,m.fc); fixRook(m.tr,m.tc);
+    n.ep = m.dbl ? {r:(m.fr+m.tr)/2, c:m.fc} : null;
+    n.turn = opp; n.last = {fr:m.fr,fc:m.fc,tr:m.tr,tc:m.tc};
+    n.captured = !!captured;
+    return n;
+  }
+
+  function legal(s, r, c){
+    return pseudo(s,r,c).filter(m => !inCheck(apply(s,m), s.turn));
+  }
+  function anyLegal(s){
+    for(let r=0;r<8;r++) for(let c=0;c<8;c++)
+      if(s.b[r][c] && s.b[r][c][0]===s.turn && legal(s,r,c).length) return true;
+    return false;
+  }
+  function onlyKings(s){ return s.b.flat().filter(Boolean).every(p=>p[1]==='K'); }
+
+  // ---------- 소리 ----------
+  let soundOn = true, ac=null;
+  function tone(f,d=.1,type='sine',v=.18,w=0){ if(!soundOn) return; try{
+    ac = ac || new (window.AudioContext||window.webkitAudioContext)();
+    const t=ac.currentTime+w, o=ac.createOscillator(), g=ac.createGain(); o.type=type; o.frequency.setValueAtTime(f,t);
+    g.gain.setValueAtTime(v,t); g.gain.exponentialRampToValueAtTime(.001,t+d); o.connect(g).connect(ac.destination); o.start(t); o.stop(t+d);
+  }catch(e){} }
+  const sMove = () => { tone(520,.07,'triangle'); tone(780,.06,'sine',.08,.04); };
+  const sCap  = () => { tone(300,.1,'square',.12); tone(900,.12,'triangle',.15,.05); };
+  const sCheck= () => { tone(880,.12,'square',.12); tone(660,.15,'square',.12,.12); };
+  const sWin  = () => [523,659,784,1047,784,1047].forEach((f,i)=>tone(f,.18,'triangle',.2,i*.12));
+  const sPick = () => tone(990,.05,'sine',.1);
+
+  // ---------- 화면 ----------
+  let S, hist, sel = null, moves = [], flipped = false, over = false, pendingPromo = null;
+  const boardEl = $('board');
+  const sqs = [];
+  for(let i=0;i<64;i++){ const d=document.createElement('div'); d.className='sq'; boardEl.appendChild(d); sqs.push(d);
+    d.addEventListener('click', ()=>tap(d._r, d._c)); }
+  function sizeCell(){ boardEl.style.setProperty('--cell', (boardEl.clientWidth/8)+'px'); }
+  window.addEventListener('resize', sizeCell);
+
+  function render(animTo){
+    const k = S.turn==='w' ? null : null;
+    const chk = inCheck(S, S.turn) ? kingPos(S.b, S.turn) : null;
+    for(let i=0;i<64;i++){
+      const vr = Math.floor(i/8), vc = i%8;
+      const r = flipped ? 7-vr : vr, c = flipped ? 7-vc : vc;
+      const d = sqs[i]; d._r=r; d._c=c;
+      let cls = 'sq ' + ((r+c)%2 ? 'd':'l');
+      if(S.last && ((S.last.fr===r&&S.last.fc===c)||(S.last.tr===r&&S.last.tc===c))) cls+=' last';
+      if(sel && sel[0]===r && sel[1]===c) cls+=' sel';
+      if(chk && chk[0]===r && chk[1]===c) cls+=' incheck';
+      d.className = cls;
+      let h = '';
+      const p = S.b[r][c];
+      if(p){ const moved = animTo && animTo[0]===r && animTo[1]===c;
+        h += `<span class="pc glyph ${p[0]}${moved?' moved':''}">${GLYPH[p[1]]}${VS}</span>`; }
+      const m = moves.find(m=>m.tr===r&&m.tc===c);
+      if(m) h += (p || m.ep) ? '<div class="ring"></div>' : '<div class="dot"></div>';
+      if(vc===7) h += `<span class="coord r">${8-r}</span>`;
+      if(vr===7) h += `<span class="coord f">${'abcdefgh'[c]}</span>`;
+      d.innerHTML = h;
+    }
+    // 위/아래 막대: 판을 돌리면 자리도 바뀌어요
+    const top = flipped ? 'w':'b', bot = flipped ? 'b':'w';
+    const barT=$('barTop'), barB=$('barBot');
+    barT.className = 'pbar '+top; barB.className = 'pbar '+bot;
+    barT.querySelector('.nm').textContent = top==='w'?`${names.w} (하양)`:`${names.b} (검정)`;
+    barB.querySelector('.nm').textContent = bot==='w'?`${names.w} (하양)`:`${names.b} (검정)`;
+    const caps = col => S.caps[col].map(p=>`<span class="${p[0]}">${GLYPH[p[1]]}${VS}</span>`).join('');
+    barT.querySelector('.caps').innerHTML = caps(top);
+    barB.querySelector('.caps').innerHTML = caps(bot);
+    if(!over){ (S.turn===top?barT:barB).classList.add('active'); }
+    $('undo').disabled = hist.length===0;
+  }
+
+  function say(text, check=false){
+    const m=$('msg'); m.textContent=text; m.classList.remove('check'); void m.offsetWidth; if(check) m.classList.add('check');
+  }
+
+  function tap(r,c){
+    if(over || pendingPromo) return;
+    const p = S.b[r][c];
+    if(sel){
+      const m = moves.find(m=>m.tr===r&&m.tc===c);
+      if(m){ doMove(m); return; }
+    }
+    if(p && p[0]===S.turn){
+      if(sel && sel[0]===r && sel[1]===c){ sel=null; moves=[]; render(); return; }
+      sel=[r,c]; moves=legal(S,r,c); sPick();
+      const [nm,desc]=INFO[p[1]];
+      say(moves.length ? `${nm}: ${desc}` : `${nm}: 지금은 갈 수 있는 곳이 없어요 😅`);
+      render(); return;
+    }
+    if(p && p[0]!==S.turn){ say(`그건 상대 말이에요! ${S.turn==='w'?'하양':'검정'} 말을 골라 주세요`); }
+    sel=null; moves=[]; render();
+  }
+
+  function doMove(m, promoTo){
+    if(m.promo && !promoTo){ askPromo(m); return; }
+    hist.push(S);
+    S = apply(S, m, promoTo||'Q');
+    sel=null; moves=[];
+    const chk = inCheck(S, S.turn), more = anyLegal(S);
+    render([m.tr,m.tc]);
+    if(!more){
+      over = true; render();
+      if(chk){ sWin(); end(S.turn==='w'?'b':'w'); }
+      else end(null, '스테일메이트', '움직일 수 있는 말이 없어서 비겼어요!');
+      return;
+    }
+    if(onlyKings(S)){ over=true; render(); end(null,'무승부','킹만 남았어요. 둘 다 잘했어요!'); return; }
+    if(chk){ sCheck(); say(`체크! ${S.turn==='w'?'하양':'검정'} 킹이 위험해요! 지켜 주세요 🛡️`, true); }
+    else { S.captured ? sCap() : sMove(); say(`${S.turn==='w'?names.w+' (하양)':names.b+' (검정)'} 차례예요`); }
+  }
+
+  function askPromo(m){
+    pendingPromo = m;
+    const col = S.turn, box = $('promoBox'); box.innerHTML='';
+    [['Q','퀸'],['R','룩'],['B','비숍'],['N','나이트']].forEach(([t,nm])=>{
+      const bt=document.createElement('button');
+      bt.innerHTML = `<span class="pc glyph ${col}" style="font-size:52px;filter:none">${GLYPH[t]}${VS}</span><small>${nm}</small>`;
+      bt.onclick=()=>{ $('promoOv').classList.remove('show'); pendingPromo=null; doMove(m,t); };
+      box.appendChild(bt);
+    });
+    $('promoOv').classList.add('show');
+  }
+
+  function end(winner, title, msg){
+    setTimeout(()=>{
+      if(winner){
+        $('endFace').innerHTML = `<span class="pc glyph ${winner}" style="font-size:90px;--cell:110px">♚${VS}</span>`;
+        $('endTitle').textContent = '체크메이트! 🏆';
+        $('endMsg').textContent = `${winner==='w'?names.w:names.b} 승리! 정말 멋져요!`;
+        confetti();
+      } else {
+        $('endFace').textContent='🤝'; $('endTitle').textContent=title; $('endMsg').textContent=msg;
+      }
+      $('endOv').classList.add('show');
+    }, 500);
+    say(winner ? `${winner==='w'?names.w:names.b} 승리!` : title);
+  }
+
+  function newGame(){ S=initial(); hist=[]; sel=null; moves=[]; over=false;
+    say('말을 누르면 갈 수 있는 곳이 초록 점으로 보여요'); render(); }
+
+  $('undo').onclick = () => { if(!hist.length) return; S = hist.pop(); over=false; sel=null; moves=[];
+    tone(400,.08); say('한 수 물렀어요! 다시 생각해 봐요 🤔'); render(); };
+  $('flip').onclick = () => { flipped=!flipped; render(); };
+  $('sound').onclick = () => { soundOn=!soundOn; $('sound').textContent=soundOn?'🔊 소리 켜짐':'🔈 소리 꺼짐'; };
+  $('restart').onclick = () => { if(hist.length && !over) $('newOv').classList.add('show'); else newGame(); };
+  $('newYes').onclick = () => { $('newOv').classList.remove('show'); newGame(); };
+  $('newNo').onclick = () => $('newOv').classList.remove('show');
+  $('again').onclick = () => { $('endOv').classList.remove('show'); newGame(); };
+  $('look').onclick = () => $('endOv').classList.remove('show');
+
+  function confetti(){
+    const c=$('confetti'), x=c.getContext('2d'); c.width=innerWidth; c.height=innerHeight;
+    const colors=['#ffb3c7','#a8d8ff','#ffe066','#b8f2c2','#d7b8ff','#ffcf9e'];
+    const bits=Array.from({length:140},()=>({x:Math.random()*c.width,y:-20-Math.random()*c.height*.5,vx:(Math.random()-.5)*3,
+      vy:2+Math.random()*3,s:6+Math.random()*8,r:Math.random()*6,vr:(Math.random()-.5)*.25,c:colors[Math.floor(Math.random()*6)],h:Math.random()<.25}));
+    const t0=performance.now();
+    (function f(now){ x.clearRect(0,0,c.width,c.height);
+      bits.forEach(b=>{b.x+=b.vx;b.y+=b.vy;b.r+=b.vr;b.vy+=.03;x.save();x.translate(b.x,b.y);x.rotate(b.r);x.fillStyle=b.c;
+        if(b.h){x.font=`${b.s*1.6}px sans-serif`;x.fillText('💖',0,0);} else x.fillRect(-b.s/2,-b.s/4,b.s,b.s/2);x.restore();});
+      if(now-t0<3800) requestAnimationFrame(f); else x.clearRect(0,0,c.width,c.height); })(t0);
+  }
+
+  // 테스트용
+  window.__chess = { tap, get S(){return S}, legal, initial, apply, anyLegal, inCheck, pseudo };
+
+  sizeCell(); newGame();
+})();
+</script>
+</body>
+</html>
