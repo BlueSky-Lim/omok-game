@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#fff6d6">
+<link rel="apple-touch-icon" href="../icon.png">
+<link rel="icon" href="../icon.png">
+<title>산수 놀이 · 우리집 놀이터</title>
+<link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
+<style>
+  :root{--ink:#5b3a29;--soft:#8a6a55;--y:#ffd76a;--yd:#f2b632;--pk:#f27a9b;--bl:#5aa9e6;--gr:#6cbf5a}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none}
+  html,body{margin:0;min-height:100%;overscroll-behavior:none}
+  button,a{touch-action:manipulation}
+  body{
+    font-family:'Jua',system-ui,sans-serif;color:var(--ink);user-select:none;-webkit-user-select:none;
+    background:
+      radial-gradient(circle at 10% 15%,#fff 0 6px,transparent 7px),
+      radial-gradient(circle at 85% 8%,#fff 0 4px,transparent 5px),
+      radial-gradient(circle at 92% 70%,#fff 0 7px,transparent 8px),
+      radial-gradient(circle at 6% 85%,#fff 0 5px,transparent 6px),
+      linear-gradient(160deg,#fff8dc,#ffe9ef);
+    background-attachment:fixed;
+    min-height:100vh;min-height:100dvh;
+    padding:calc(env(safe-area-inset-top) + 12px) 14px calc(env(safe-area-inset-bottom) + 16px);
+    display:flex;flex-direction:column;align-items:center;
+  }
+  .home{position:fixed;top:calc(env(safe-area-inset-top) + 10px);left:12px;z-index:40;
+    width:50px;height:50px;border-radius:50%;background:#fff;display:grid;place-items:center;border:none;
+    font-size:26px;text-decoration:none;box-shadow:0 4px 0 rgba(0,0,0,.1);cursor:pointer;font-family:inherit}
+  .home:active{transform:translateY(3px);box-shadow:0 1px 0 rgba(0,0,0,.1)}
+  h1{margin:4px 0 2px;font-size:clamp(28px,6.5vw,48px);font-weight:400;text-shadow:0 3px 0 #fff,0 5px 0 rgba(242,182,50,.3)}
+  .sub{color:var(--soft);font-size:clamp(15px,3vw,20px);margin-bottom:clamp(14px,3vh,28px);text-align:center}
+  .screen{display:none;width:min(94vw,760px);flex:1;flex-direction:column}
+  .screen.show{display:flex}
+
+  /* 단계 고르기 */
+  .stages{display:grid;grid-template-columns:repeat(2,1fr);gap:clamp(10px,2.2vw,18px)}
+  .stage{font-family:inherit;color:inherit;border:none;background:#fff;border-radius:24px;cursor:pointer;
+    padding:clamp(10px,2vw,16px) 12px;display:flex;align-items:center;gap:12px;text-align:left;
+    box-shadow:0 5px 0 var(--c,#ffe4a8);transition:transform .1s;animation:in .4s cubic-bezier(.3,1.5,.5,1) backwards}
+  .stage:active{transform:translateY(4px);box-shadow:0 1px 0 var(--c,#ffe4a8)}
+  @keyframes in{from{transform:scale(.6);opacity:0}}
+  .stage .ic{width:clamp(48px,10vw,72px);aspect-ratio:1;border-radius:30%;background:var(--c,#ffe4a8);display:grid;place-items:center;
+    font-size:clamp(28px,6vw,44px);flex:none}
+  .stage .num{font-size:clamp(13px,2.4vw,16px);color:var(--soft)}
+  .stage .nm{font-size:clamp(18px,3.6vw,26px);line-height:1.15}
+  .stage .stars{font-size:clamp(14px,2.8vw,20px);letter-spacing:1px;margin-top:2px}
+  .stars .off{filter:grayscale(1);opacity:.3}
+  .total{text-align:center;margin-top:18px;color:var(--soft);font-size:clamp(15px,3vw,20px)}
+
+  /* 문제 화면 */
+  .topbar{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+  .stitle{flex:1;text-align:center;font-size:clamp(20px,4vw,30px)}
+  .prog{display:flex;gap:6px;justify-content:center;margin-bottom:clamp(12px,2.5vh,22px)}
+  .prog i{width:clamp(18px,3.6vw,30px);height:clamp(18px,3.6vw,30px);border-radius:50%;background:#fff;box-shadow:inset 0 -3px 0 rgba(0,0,0,.08);
+    display:grid;place-items:center;font-style:normal;font-size:clamp(11px,2.2vw,17px)}
+  .prog i.now{background:var(--y);transform:scale(1.2)}
+  .prog i.ok{background:#c6ecb6} .prog i.retry{background:#ffd6c2}
+  .card{background:#fff;border-radius:32px;padding:clamp(18px,4vw,34px) clamp(14px,3vw,28px);text-align:center;
+    box-shadow:0 8px 0 #ffe4a8,0 16px 30px rgba(0,0,0,.06);position:relative}
+  .qno{color:var(--soft);font-size:clamp(15px,3vw,20px)}
+  .q{font-size:clamp(48px,12vw,104px);line-height:1.15;margin:6px 0;letter-spacing:2px;word-break:keep-all}
+  .q.story{font-size:clamp(22px,4.8vw,38px);line-height:1.45;letter-spacing:0;margin:10px 4px}
+  .q .box{display:inline-block;min-width:1.1em;border:5px dashed var(--yd);border-radius:16px;color:var(--yd);line-height:1.05;padding:0 .1em}
+  .q .op{color:var(--pk)}
+  .tools{display:flex;gap:10px;justify-content:center;margin-top:8px;flex-wrap:wrap}
+  .btn{font-family:inherit;font-size:clamp(16px,3.2vw,22px);color:var(--ink);background:#fff6d6;border:none;padding:10px 18px;
+    border-radius:99px;cursor:pointer;box-shadow:0 4px 0 rgba(0,0,0,.1)}
+  .btn:active{transform:translateY(3px);box-shadow:0 1px 0 rgba(0,0,0,.1)}
+  .btn.primary{background:var(--yd);color:#fff;box-shadow:0 4px 0 #c98f12}
+  .btn.hint{background:#fff1b8}
+
+  .hintbox{display:none;margin-top:14px;background:#fffbea;border:3px dashed #f6d58a;border-radius:22px;padding:12px 10px 14px;
+    animation:in .35s cubic-bezier(.3,1.5,.5,1)}
+  .hintbox.show{display:block}
+  .htext{font-size:clamp(17px,3.4vw,24px);line-height:1.4;margin-bottom:8px;word-break:keep-all}
+  .pics{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:6px 14px}
+  .grp{display:grid;grid-template-columns:repeat(5,auto);gap:2px 4px;padding:6px 8px;border-radius:16px;background:#fff}
+  .grp.b{background:#e9f4ff} .grp.a{background:#ffeef3}
+  .it{font-size:clamp(24px,5vw,38px);line-height:1.1;position:relative;animation:pop .3s backwards}
+  @keyframes pop{from{transform:scale(0)}}
+  .it.gone{opacity:.35}
+  .it.gone::after{content:'';position:absolute;left:-8%;right:-8%;top:50%;height:4px;background:#e5484d;border-radius:4px;transform:rotate(-35deg)}
+  .it.empty{display:inline-block;width:1.1em;height:1.1em;border:3px dashed #e4c27a;border-radius:50%;opacity:.9}
+  .sign{font-size:clamp(28px,6vw,44px);color:var(--pk)}
+  .frame{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;background:#f6d58a;padding:5px;border-radius:12px}
+  .frame span{background:#fff;border-radius:8px;width:clamp(36px,7vw,56px);aspect-ratio:1;display:grid;place-items:center;font-size:clamp(22px,4.6vw,36px)}
+
+  .answers{display:grid;grid-template-columns:repeat(2,1fr);gap:clamp(12px,2.6vw,20px);margin-top:clamp(16px,3vh,28px)}
+  .ans{font-family:inherit;font-size:clamp(40px,10vw,80px);color:var(--ink);border:none;border-radius:28px;cursor:pointer;
+    padding:clamp(8px,1.6vh,16px) 0;background:#fff;box-shadow:0 7px 0 var(--c);transition:transform .1s}
+  .ans:nth-child(1){--c:#ffc4d4} .ans:nth-child(2){--c:#bfe2ff} .ans:nth-child(3){--c:#c6ecb6} .ans:nth-child(4){--c:#e2d0ff}
+  .ans:active{transform:translateY(5px);box-shadow:0 2px 0 var(--c)}
+  .ans.wrong{background:#eee;color:#bbb;box-shadow:0 3px 0 #ddd;animation:shake .4s;pointer-events:none}
+  .ans.right{background:#7fd36b;color:#fff;box-shadow:0 7px 0 #4a9a3a;animation:yay .5s}
+  @keyframes shake{20%,60%{transform:translateX(-8px)}40%,80%{transform:translateX(8px)}}
+  @keyframes yay{50%{transform:scale(1.12)}}
+
+  .fb{position:fixed;left:50%;top:42%;transform:translate(-50%,-50%);font-size:clamp(70px,18vw,150px);pointer-events:none;z-index:30;
+    opacity:0;text-shadow:0 6px 0 #fff}
+  .fb.show{animation:fb .9s ease-out}
+  @keyframes fb{0%{opacity:0;transform:translate(-50%,-50%) scale(.3)}30%{opacity:1;transform:translate(-50%,-50%) scale(1.15)}
+    70%{opacity:1;transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(-50%,-70%) scale(1)}}
+  .say{text-align:center;min-height:1.4em;margin-top:12px;font-size:clamp(18px,3.6vw,26px);color:var(--pk)}
+
+  /* 결과 */
+  .result{text-align:center;background:#fff;border-radius:34px;padding:30px 20px;box-shadow:0 8px 0 #ffe4a8;margin-top:4vh}
+  .result .big{font-size:clamp(70px,16vw,120px);line-height:1;animation:bob 1s ease-in-out infinite}
+  @keyframes bob{50%{transform:translateY(-8px) rotate(-6deg)}}
+  .result h2{font-weight:400;font-size:clamp(28px,6vw,44px);margin:10px 0 4px}
+  .result .rs{font-size:clamp(40px,9vw,70px);letter-spacing:4px;margin:8px 0}
+  .result p{color:var(--soft);font-size:clamp(16px,3.2vw,22px);margin:4px 0 20px}
+  .result .row{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+  canvas#confetti{position:fixed;inset:0;pointer-events:none;z-index:60}
+  @media (max-width:440px){ h1{margin-left:40px} }
+</style>
+</head>
+<body>
+  <a class="home" id="homeBtn" href="../index.html" aria-label="처음 화면">🏠</a>
+
+  <!-- 단계 고르기 -->
+  <div class="screen show" id="scMenu">
+    <h1 style="text-align:center">🧮 산수 놀이</h1>
+    <div class="sub">10단계 · 100문제! 어디부터 해 볼까?</div>
+    <div class="stages" id="stages"></div>
+    <div class="total" id="total"></div>
+  </div>
+
+  <!-- 문제 -->
+  <div class="screen" id="scPlay">
+    <div class="topbar"><div class="stitle" id="stitle"></div></div>
+    <div class="prog" id="prog"></div>
+    <div class="card">
+      <div class="qno" id="qno"></div>
+      <div class="q" id="q"></div>
+      <div class="tools">
+        <button class="btn" id="read">🔊 읽어 주기</button>
+        <button class="btn hint" id="hintBtn">💡 힌트</button>
+      </div>
+      <div class="hintbox" id="hintbox"><div class="htext" id="htext"></div><div class="pics" id="pics"></div></div>
+    </div>
+    <div class="answers" id="answers"></div>
+    <div class="say" id="say"></div>
+  </div>
+
+  <!-- 결과 -->
+  <div class="screen" id="scDone">
+    <div class="result">
+      <div class="big" id="rFace">🏆</div>
+      <h2 id="rTitle">다 풀었어요!</h2>
+      <div class="rs" id="rStars"></div>
+      <p id="rMsg"></p>
+      <div class="row">
+        <button class="btn" id="rAgain">🔁 다시 하기</button>
+        <button class="btn" id="rMenu">📋 단계 고르기</button>
+        <button class="btn primary" id="rNext">다음 단계 ▶</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="fb" id="fb"></div>
+  <canvas id="confetti"></canvas>
+
+<script>
+const DATA = [{"name": "그림 보고 더하기", "icon": "🍎", "probs": [{"q": "3 + 2 = ?", "a": 5, "k": "add", "x": 3, "y": 2, "pic": true, "e": "🍎"}, {"q": "1 + 4 = ?", "a": 5, "k": "add", "x": 1, "y": 4, "pic": true, "e": "🍎"}, {"q": "1 + 2 = ?", "a": 3, "k": "add", "x": 1, "y": 2, "pic": true, "e": "🍎"}, {"q": "2 + 1 = ?", "a": 3, "k": "add", "x": 2, "y": 1, "pic": true, "e": "🍎"}, {"q": "3 + 1 = ?", "a": 4, "k": "add", "x": 3, "y": 1, "pic": true, "e": "🍎"}, {"q": "1 + 1 = ?", "a": 2, "k": "add", "x": 1, "y": 1, "pic": true, "e": "🍎"}, {"q": "4 + 1 = ?", "a": 5, "k": "add", "x": 4, "y": 1, "pic": true, "e": "🍎"}, {"q": "2 + 3 = ?", "a": 5, "k": "add", "x": 2, "y": 3, "pic": true, "e": "🍎"}, {"q": "1 + 3 = ?", "a": 4, "k": "add", "x": 1, "y": 3, "pic": true, "e": "🍎"}, {"q": "2 + 2 = ?", "a": 4, "k": "add", "x": 2, "y": 2, "pic": true, "e": "🍎"}]}, {"name": "10까지 더하기", "icon": "➕", "probs": [{"q": "5 + 2 = ?", "a": 7, "k": "add", "x": 5, "y": 2, "pic": false}, {"q": "7 + 3 = ?", "a": 10, "k": "add", "x": 7, "y": 3, "pic": false}, {"q": "3 + 7 = ?", "a": 10, "k": "add", "x": 3, "y": 7, "pic": false}, {"q": "4 + 2 = ?", "a": 6, "k": "add", "x": 4, "y": 2, "pic": false}, {"q": "3 + 3 = ?", "a": 6, "k": "add", "x": 3, "y": 3, "pic": false}, {"q": "2 + 8 = ?", "a": 10, "k": "add", "x": 2, "y": 8, "pic": false}, {"q": "3 + 4 = ?", "a": 7, "k": "add", "x": 3, "y": 4, "pic": false}, {"q": "4 + 3 = ?", "a": 7, "k": "add", "x": 4, "y": 3, "pic": false}, {"q": "5 + 5 = ?", "a": 10, "k": "add", "x": 5, "y": 5, "pic": false}, {"q": "6 + 1 = ?", "a": 7, "k": "add", "x": 6, "y": 1, "pic": false}]}, {"name": "그림 보고 빼기", "icon": "🍪", "probs": [{"q": "5 - 4 = ?", "a": 1, "k": "sub", "x": 5, "y": 4, "pic": true, "e": "🐟"}, {"q": "3 - 2 = ?", "a": 1, "k": "sub", "x": 3, "y": 2, "pic": true, "e": "🐟"}, {"q": "4 - 1 = ?", "a": 3, "k": "sub", "x": 4, "y": 1, "pic": true, "e": "🐟"}, {"q": "5 - 2 = ?", "a": 3, "k": "sub", "x": 5, "y": 2, "pic": true, "e": "🐟"}, {"q": "5 - 1 = ?", "a": 4, "k": "sub", "x": 5, "y": 1, "pic": true, "e": "🐟"}, {"q": "2 - 1 = ?", "a": 1, "k": "sub", "x": 2, "y": 1, "pic": true, "e": "🐟"}, {"q": "4 - 2 = ?", "a": 2, "k": "sub", "x": 4, "y": 2, "pic": true, "e": "🐟"}, {"q": "5 - 3 = ?", "a": 2, "k": "sub", "x": 5, "y": 3, "pic": true, "e": "🐟"}, {"q": "3 - 1 = ?", "a": 2, "k": "sub", "x": 3, "y": 1, "pic": true, "e": "🐟"}, {"q": "4 - 3 = ?", "a": 1, "k": "sub", "x": 4, "y": 3, "pic": true, "e": "🐟"}]}, {"name": "10까지 빼기", "icon": "➖", "probs": [{"q": "6 - 5 = ?", "a": 1, "k": "sub", "x": 6, "y": 5, "pic": false}, {"q": "6 - 4 = ?", "a": 2, "k": "sub", "x": 6, "y": 4, "pic": false}, {"q": "8 - 7 = ?", "a": 1, "k": "sub", "x": 8, "y": 7, "pic": false}, {"q": "10 - 9 = ?", "a": 1, "k": "sub", "x": 10, "y": 9, "pic": false}, {"q": "8 - 3 = ?", "a": 5, "k": "sub", "x": 8, "y": 3, "pic": false}, {"q": "10 - 1 = ?", "a": 9, "k": "sub", "x": 10, "y": 1, "pic": false}, {"q": "6 - 1 = ?", "a": 5, "k": "sub", "x": 6, "y": 1, "pic": false}, {"q": "8 - 2 = ?", "a": 6, "k": "sub", "x": 8, "y": 2, "pic": false}, {"q": "10 - 3 = ?", "a": 7, "k": "sub", "x": 10, "y": 3, "pic": false}, {"q": "8 - 1 = ?", "a": 7, "k": "sub", "x": 8, "y": 1, "pic": false}]}, {"name": "10 만들기", "icon": "🔟", "probs": [{"q": "2 + □ = 10", "a": 8, "k": "ten", "x": 2, "y": 8, "pic": false}, {"q": "6 + □ = 10", "a": 4, "k": "ten", "x": 6, "y": 4, "pic": false}, {"q": "5 + □ = 10", "a": 5, "k": "ten", "x": 5, "y": 5, "pic": false}, {"q": "4 + □ = 10", "a": 6, "k": "ten", "x": 4, "y": 6, "pic": false}, {"q": "3 + □ = 10", "a": 7, "k": "ten", "x": 3, "y": 7, "pic": false}, {"q": "□ + 7 = 10", "a": 3, "k": "ten", "x": 3, "y": 7, "pic": false}, {"q": "□ + 1 = 10", "a": 9, "k": "ten", "x": 9, "y": 1, "pic": false}, {"q": "□ + 9 = 10", "a": 1, "k": "ten", "x": 1, "y": 9, "pic": false}, {"q": "□ + 8 = 10", "a": 2, "k": "ten", "x": 2, "y": 8, "pic": false}, {"q": "10 = 4 + □", "a": 6, "k": "ten", "x": 4, "y": 6, "pic": false}]}, {"name": "더하기 빼기 섞기", "icon": "🎲", "probs": [{"q": "7 - 6 = ?", "a": 1, "k": "sub", "x": 7, "y": 6, "pic": false}, {"q": "6 - 3 = ?", "a": 3, "k": "sub", "x": 6, "y": 3, "pic": false}, {"q": "5 + 0 = ?", "a": 5, "k": "add", "x": 5, "y": 0, "pic": false}, {"q": "10 - 3 = ?", "a": 7, "k": "sub", "x": 10, "y": 3, "pic": false}, {"q": "5 + 5 = ?", "a": 10, "k": "add", "x": 5, "y": 5, "pic": false}, {"q": "5 + 3 = ?", "a": 8, "k": "add", "x": 5, "y": 3, "pic": false}, {"q": "2 + 2 = ?", "a": 4, "k": "add", "x": 2, "y": 2, "pic": false}, {"q": "0 + 3 = ?", "a": 3, "k": "add", "x": 0, "y": 3, "pic": false}, {"q": "8 - 6 = ?", "a": 2, "k": "sub", "x": 8, "y": 6, "pic": false}, {"q": "9 - 4 = ?", "a": 5, "k": "sub", "x": 9, "y": 4, "pic": false}]}, {"name": "십몇 계산", "icon": "🐟", "probs": [{"q": "11 + 6 = ?", "a": 17, "k": "add", "x": 11, "y": 6, "pic": false}, {"q": "18 - 1 = ?", "a": 17, "k": "sub", "x": 18, "y": 1, "pic": false}, {"q": "17 - 5 = ?", "a": 12, "k": "sub", "x": 17, "y": 5, "pic": false}, {"q": "11 + 1 = ?", "a": 12, "k": "add", "x": 11, "y": 1, "pic": false}, {"q": "13 - 3 = ?", "a": 10, "k": "sub", "x": 13, "y": 3, "pic": false}, {"q": "11 + 8 = ?", "a": 19, "k": "add", "x": 11, "y": 8, "pic": false}, {"q": "12 + 3 = ?", "a": 15, "k": "add", "x": 12, "y": 3, "pic": false}, {"q": "13 + 3 = ?", "a": 16, "k": "add", "x": 13, "y": 3, "pic": false}, {"q": "15 - 1 = ?", "a": 14, "k": "sub", "x": 15, "y": 1, "pic": false}, {"q": "18 - 4 = ?", "a": 14, "k": "sub", "x": 18, "y": 4, "pic": false}]}, {"name": "10을 넘어가요", "icon": "🚀", "probs": [{"q": "9 + 5 = ?", "a": 14, "k": "add", "x": 9, "y": 5, "pic": false}, {"q": "12 - 9 = ?", "a": 3, "k": "sub", "x": 12, "y": 9, "pic": false}, {"q": "12 - 4 = ?", "a": 8, "k": "sub", "x": 12, "y": 4, "pic": false}, {"q": "5 + 9 = ?", "a": 14, "k": "add", "x": 5, "y": 9, "pic": false}, {"q": "8 + 6 = ?", "a": 14, "k": "add", "x": 8, "y": 6, "pic": false}, {"q": "8 + 4 = ?", "a": 12, "k": "add", "x": 8, "y": 4, "pic": false}, {"q": "11 - 2 = ?", "a": 9, "k": "sub", "x": 11, "y": 2, "pic": false}, {"q": "4 + 9 = ?", "a": 13, "k": "add", "x": 4, "y": 9, "pic": false}, {"q": "6 + 9 = ?", "a": 15, "k": "add", "x": 6, "y": 9, "pic": false}, {"q": "16 - 8 = ?", "a": 8, "k": "sub", "x": 16, "y": 8, "pic": false}]}, {"name": "빈칸 채우기", "icon": "❓", "probs": [{"q": "□ + 8 = 10", "a": 2, "k": "blankadd", "x": 2, "y": 8, "known": 8, "tot": 10, "pic": false}, {"q": "□ + 7 = 8", "a": 1, "k": "blankadd", "x": 1, "y": 7, "known": 7, "tot": 8, "pic": false}, {"q": "15 - □ = 8", "a": 7, "k": "blanksub", "x": 15, "y": 7, "pic": false}, {"q": "12 - □ = 9", "a": 3, "k": "blanksub", "x": 12, "y": 3, "pic": false}, {"q": "7 - □ = 2", "a": 5, "k": "blanksub", "x": 7, "y": 5, "pic": false}, {"q": "□ + 5 = 10", "a": 5, "k": "blankadd", "x": 5, "y": 5, "known": 5, "tot": 10, "pic": false}, {"q": "13 - □ = 8", "a": 5, "k": "blanksub", "x": 13, "y": 5, "pic": false}, {"q": "□ + 4 = 12", "a": 8, "k": "blankadd", "x": 8, "y": 4, "known": 4, "tot": 12, "pic": false}, {"q": "9 + □ = 13", "a": 4, "k": "blankadd", "x": 9, "y": 4, "known": 9, "tot": 13, "pic": false}, {"q": "12 - □ = 8", "a": 4, "k": "blanksub", "x": 12, "y": 4, "pic": false}]}, {"name": "이야기 문제", "icon": "📖", "probs": [{"q": "사과가 3개 있어요. 엄마가 4개를 더 주셨어요. 사과는 모두 몇 개일까요?", "a": 7, "k": "story", "e": "🍎", "pic": false, "op": "+", "x": 3, "y": 4}, {"q": "풍선이 8개 있었는데 2개가 날아갔어요. 남은 풍선은 몇 개일까요?", "a": 6, "k": "story", "e": "🎈", "pic": false, "op": "-", "x": 8, "y": 2}, {"q": "연못에 오리가 5마리, 거위가 5마리 있어요. 모두 몇 마리일까요?", "a": 10, "k": "story", "e": "🦆", "pic": false, "op": "+", "x": 5, "y": 5}, {"q": "쿠키 9개 중에서 동생이 3개를 먹었어요. 남은 쿠키는 몇 개일까요?", "a": 6, "k": "story", "e": "🍪", "pic": false, "op": "-", "x": 9, "y": 3}, {"q": "버스에 6명이 타고 있었는데 4명이 더 탔어요. 버스에는 몇 명이 있을까요?", "a": 10, "k": "story", "e": "🚌", "pic": false, "op": "+", "x": 6, "y": 4}, {"q": "딸기가 12개 있어요. 아빠랑 5개를 먹었어요. 남은 딸기는 몇 개일까요?", "a": 7, "k": "story", "e": "🍓", "pic": false, "op": "-", "x": 12, "y": 5}, {"q": "나비가 7마리 날아왔고, 또 6마리가 날아왔어요. 나비는 모두 몇 마리일까요?", "a": 13, "k": "story", "e": "🦋", "pic": false, "op": "+", "x": 7, "y": 6}, {"q": "스티커를 15장 가지고 있어요. 친구에게 4장을 줬어요. 남은 스티커는 몇 장일까요?", "a": 11, "k": "story", "e": "⭐", "pic": false, "op": "-", "x": 15, "y": 4}, {"q": "한 손 손가락은 5개예요. 두 손 손가락은 모두 몇 개일까요?", "a": 10, "k": "story", "e": "🖐️", "pic": false, "op": "+", "x": 5, "y": 5}, {"q": "강아지 다리는 4개예요. 강아지 2마리의 다리는 모두 몇 개일까요?", "a": 8, "k": "story", "e": "🐶", "pic": false, "op": "+", "x": 4, "y": 4}]}];
+(() => {
+  const $ = id => document.getElementById(id);
+  const COLORS = ['#ffd6e0','#ffe4a8','#d4ecff','#d8f3cc','#e8dcff','#ffdcc8','#cdeff0','#ffe0f0','#fff0b3','#e0e8ff'];
+  const STAGE_EMO = ['🍎','➕','🍪','🐟','⭐','🎲','🐟','🚀','🌷','📖'];
+  const PRAISE = ['딩동댕! 맞았어요!','우와, 천재다!','정답! 최고야!','짝짝짝! 잘했어요!','맞았어! 멋져요!'];
+  const RETRY  = ['아깝다! 다시 해 볼까?','괜찮아, 한 번 더!','힌트를 보고 다시 해 봐요!'];
+
+  // ---------- 기록 ----------
+  let best = {};
+  try{ best = JSON.parse(localStorage.getItem('math-stars')||'{}'); }catch(e){}
+  const saveBest = () => { try{ localStorage.setItem('math-stars', JSON.stringify(best)); }catch(e){} };
+
+  // ---------- 소리 ----------
+  let ac=null;
+  function tone(f,d=.12,type='sine',v=.18,w=0){ try{
+    ac = ac || new (window.AudioContext||window.webkitAudioContext)();
+    const t=ac.currentTime+w,o=ac.createOscillator(),g=ac.createGain(); o.type=type; o.frequency.setValueAtTime(f,t);
+    g.gain.setValueAtTime(v,t); g.gain.exponentialRampToValueAtTime(.001,t+d); o.connect(g).connect(ac.destination); o.start(t); o.stop(t+d);
+  }catch(e){} }
+  const sRight = () => [784,988,1319].forEach((f,i)=>tone(f,.16,'triangle',.18,i*.09));
+  const sWrong = () => { tone(330,.15,'sine',.15); tone(262,.2,'sine',.15,.12); };
+  const sWin   = () => [523,659,784,1047,784,1047].forEach((f,i)=>tone(f,.18,'triangle',.2,i*.12));
+
+  // ---------- 읽어 주기 ----------
+  function speakText(p){
+    if(p.k==='story') return p.q;
+    return p.q.replace(/\+/g,' 더하기 ').replace(/-/g,' 빼기 ').replace(/=/g,' 는 ')
+              .replace(/□/g,' 네모 ').replace(/\?/g,' 얼마일까요?');
+  }
+  function speak(text){
+    try{
+      if(!window.speechSynthesis) return;
+      speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text); u.lang='ko-KR'; u.rate=.85; u.pitch=1.15;
+      const v = speechSynthesis.getVoices().find(v=>/ko/i.test(v.lang)); if(v) u.voice=v;
+      speechSynthesis.speak(u);
+    }catch(e){}
+  }
+  if(!window.speechSynthesis) $('read').style.display='none';
+
+  // ---------- 단계 목록 ----------
+  function starStr(n){ return [0,1,2].map(i=>`<span class="${i<n?'':'off'}">⭐</span>`).join(''); }
+  function drawMenu(){
+    const box=$('stages'); box.innerHTML='';
+    let total=0;
+    DATA.forEach((s,i)=>{
+      const n = best[i]||0; total+=n;
+      const b=document.createElement('button'); b.className='stage'; b.style.setProperty('--c',COLORS[i]);
+      b.style.animationDelay = (i*.04)+'s';
+      b.innerHTML = `<div class="ic">${s.icon}</div><div><div class="num">${i+1}단계</div><div class="nm">${s.name}</div>
+        <div class="stars">${starStr(n)}</div></div>`;
+      b.onclick=()=>start(i);
+      box.appendChild(b);
+    });
+    $('total').textContent = `모은 별 ${total} / 30 ⭐`;
+  }
+
+  // ---------- 게임 ----------
+  let si=0, qi=0, probs=[], firstTry=0, tried=false, locked=false;
+  function show(id){ document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('show',s.id===id)); window.scrollTo(0,0); }
+
+  function start(i){
+    si=i; qi=0; firstTry=0; probs=DATA[i].probs; DATA[i]._res=[];
+    $('stitle').textContent = `${DATA[i].icon} ${i+1}단계 · ${DATA[i].name}`;
+    show('scPlay'); ask();
+  }
+
+  function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+  function choices(ans){
+    const set=new Set([ans]);
+    const near=shuffle([1,-1,2,-2,3,-3,10,-10].map(d=>ans+d).filter(v=>v>=0&&v<=20&&v!==ans));
+    near.sort((a,b)=>Math.abs(a-ans)-Math.abs(b-ans));
+    for(const v of near){ if(set.size>=4) break; if(Math.random()<.85) set.add(v); }
+    for(let v=0; set.size<4; v++) set.add(v);
+    return shuffle([...set]);
+  }
+
+  function fmtQ(p){
+    if(p.k==='story') return p.q;
+    return p.q.replace(/□/g,'<span class="box">?</span>').replace(/\?(?![^<]*<\/span>)/g,'<span class="box">?</span>')
+              .replace(/ ([+\-=]) /g,' <span class="op">$1</span> ');
+  }
+
+  function ask(){
+    const p=probs[qi]; tried=false; locked=false;
+    $('prog').innerHTML = probs.map((_,i)=>`<i class="${i<qi?(DATA[si]._res&&DATA[si]._res[i]?'ok':'retry'):i===qi?'now':''}">${i<qi?(DATA[si]._res[i]?'⭐':'✔'):''}</i>`).join('');
+    $('qno').textContent = `${qi+1}번 문제`;
+    const q=$('q'); q.className='q'+(p.k==='story'?' story':''); q.innerHTML=fmtQ(p);
+    $('say').textContent='';
+    $('hintbox').classList.remove('show');
+    if(p.pic) showHint(true);
+    const box=$('answers'); box.innerHTML='';
+    choices(p.a).forEach(v=>{
+      const b=document.createElement('button'); b.className='ans'; b.textContent=v;
+      b.onclick=()=>pick(b,v); box.appendChild(b);
+    });
+  }
+
+  function pick(btn,v){
+    if(locked) return;
+    const p=probs[qi];
+    if(v===p.a){
+      locked=true; btn.classList.add('right'); sRight();
+      if(!DATA[si]._res) DATA[si]._res=[];
+      DATA[si]._res[qi] = !tried; if(!tried) firstTry++;
+      $('say').textContent = PRAISE[Math.floor(Math.random()*PRAISE.length)];
+      fb('⭕');
+      setTimeout(()=>{ qi++; if(qi<probs.length) ask(); else done(); }, 1100);
+    } else {
+      tried=true; btn.classList.add('wrong'); sWrong();
+      $('say').textContent = RETRY[Math.floor(Math.random()*RETRY.length)];
+      showHint();
+    }
+  }
+
+  function fb(t){ const f=$('fb'); f.textContent=t; f.classList.remove('show'); void f.offsetWidth; f.classList.add('show'); }
+
+  // ---------- 힌트 ----------
+  const items = (n,e,cls='') => Array.from({length:n},(_,i)=>`<span class="it ${cls}" style="animation-delay:${i*.04}s">${e}</span>`).join('');
+  const grp = (html,cls='') => `<div class="grp ${cls}">${html}</div>`;
+  function frame10(filled,e){
+    let h=''; for(let i=0;i<10;i++) h+=`<span>${i<filled?e:''}</span>`; return `<div class="frame">${h}</div>`;
+  }
+  function addPics(a,b,e){ return grp(items(a,e),'a') + '<span class="sign">+</span>' + grp(items(b,e),'b'); }
+  function subPics(a,b,e){
+    let h=''; for(let i=0;i<a;i++) h+=`<span class="it ${i>=a-b?'gone':''}" style="animation-delay:${i*.04}s">${e}</span>`;
+    return grp(h);
+  }
+
+  // 숫자 뒤 을/를: 일·삼·육·칠·팔·십 → 을, 이·사·오·구 → 를
+  const eul = n => n + ([0,1,3,6,7,8].includes(n%10) ? '을' : '를');
+  function hintFor(p){
+    const e = p.e || STAGE_EMO[si];
+    const {x,y} = p;
+    switch(p.k){
+      case 'add':
+        if(x+y>10 && x<10 && y<10){
+          const big=Math.max(x,y), small=Math.min(x,y), need=10-big;
+          return [`${big}에 ${eul(need)} 먼저 더하면 딱 10! 그다음 남은 ${eul(small-need)} 더해요. 10 + ${small-need} = ?`, addPics(x,y,e)];
+        }
+        if(x>=10) return [`10은 그대로 두고, ${x-10} + ${eul(y)} 먼저 해 봐요! 그다음 10을 붙여요.`, addPics(x,y,e)];
+        return [`${e}를 하나씩 손가락으로 모두 세어 봐요!`, addPics(x,y,e)];
+      case 'sub':
+        if(x>10 && y>x-10) return [`${x}에서 ${eul(x-10)} 먼저 빼면 10! 그다음 10에서 ${eul(y-(x-10))} 더 빼요.`, subPics(x,y,e)];
+        if(x>10) return [`10은 그대로 두고, ${x-10} - ${eul(y)} 먼저 해 봐요! 그다음 10을 붙여요.`, subPics(x,y,e)];
+        return [`${x}개 중에서 ${y}개를 지웠어요. 남은 ${e}는 몇 개일까요?`, subPics(x,y,e)];
+      case 'ten': {
+        const known = p.q.startsWith('□') ? y : x;
+        return [`10칸 상자에 ${known}칸이 찼어요. 빈칸은 몇 개일까요?`, frame10(known,'⭐')];
+      }
+      case 'blankadd': {
+        const k=p.known, t=p.tot;
+        let h=''; for(let i=0;i<t;i++) h += i<k ? `<span class="it" style="animation-delay:${i*.04}s">${e}</span>` : `<span class="it empty"></span>`;
+        return [`모두 ${t}개가 되어야 해요. ${k}개는 있으니까, 빈 동그라미가 몇 개인지 세어 봐요!`, grp(h)];
+      }
+      case 'blanksub':
+        return [`${x}개에서 몇 개를 지워야 ${x-y}개가 남을까요? 지운 개수를 세어 봐요!`, subPics(x,y,e)];
+      case 'story':
+        if(p.op==='+') return [`${x}개랑 ${y}개를 합치는 거예요. ${x} + ${y} = ?`, addPics(x,y,e)];
+        return [`${x}개에서 ${y}개가 없어졌어요. ${x} - ${y} = ?`, subPics(x,y,e)];
+    }
+  }
+  function showHint(quiet){
+    const [t,pics]=hintFor(probs[qi]);
+    $('htext').textContent = quiet ? '그림을 보면서 세어 봐요!' : '💡 '+t;
+    $('pics').innerHTML = pics;
+    $('hintbox').classList.add('show');
+    if(!quiet) tone(1200,.06,'sine',.08);
+  }
+
+  // ---------- 끝 ----------
+  function done(){
+    const stars = firstTry>=10?3 : firstTry>=8?2 : 1;
+    if((best[si]||0)<stars){ best[si]=stars; saveBest(); }
+    $('rStars').innerHTML = starStr(stars);
+    $('rFace').textContent = stars===3?'🏆':stars===2?'🥳':'😊';
+    $('rTitle').textContent = stars===3?'완벽해요! 다 맞았어요!':stars===2?'정말 잘했어요!':'끝까지 해냈어요!';
+    $('rMsg').textContent = `한 번에 맞힌 문제 ${firstTry}개 / 10개`;
+    $('rNext').style.display = si<DATA.length-1 ? '' : 'none';
+    show('scDone'); sWin(); if(stars>=2) confetti();
+  }
+
+  $('read').onclick = () => speak(speakText(probs[qi]));
+  $('hintBtn').onclick = () => showHint(false);
+  $('rAgain').onclick = () => start(si);
+  $('rNext').onclick = () => start(si+1);
+  $('rMenu').onclick = () => { drawMenu(); show('scMenu'); };
+  $('homeBtn').onclick = e => {
+    if(!$('scMenu').classList.contains('show')){ e.preventDefault(); drawMenu(); show('scMenu'); }
+  };
+
+  function confetti(){
+    const c=$('confetti'),x=c.getContext('2d'); c.width=innerWidth; c.height=innerHeight;
+    const colors=['#ffb3c7','#a8d8ff','#ffe066','#b8f2c2','#d7b8ff','#ffcf9e'];
+    const bits=Array.from({length:140},()=>({x:Math.random()*c.width,y:-20-Math.random()*c.height*.5,vx:(Math.random()-.5)*3,
+      vy:2+Math.random()*3,s:6+Math.random()*8,r:Math.random()*6,vr:(Math.random()-.5)*.25,c:colors[Math.floor(Math.random()*6)],h:Math.random()<.25}));
+    const t0=performance.now();
+    (function f(now){ x.clearRect(0,0,c.width,c.height);
+      bits.forEach(b=>{b.x+=b.vx;b.y+=b.vy;b.r+=b.vr;b.vy+=.03;x.save();x.translate(b.x,b.y);x.rotate(b.r);x.fillStyle=b.c;
+        if(b.h){x.font=`${b.s*1.6}px sans-serif`;x.fillText('💖',0,0);} else x.fillRect(-b.s/2,-b.s/4,b.s,b.s/2);x.restore();});
+      if(now-t0<3800) requestAnimationFrame(f); else x.clearRect(0,0,c.width,c.height); })(t0);
+  }
+
+  window.__math = { DATA, hintFor:(i,j)=>{ const ps=probs, s=si; probs=DATA[i].probs; si=i; const r=hintFor(DATA[i].probs[j]); probs=ps; si=s; return r; }, start };
+  drawMenu();
+})();
+</script>
+</body>
+</html>
